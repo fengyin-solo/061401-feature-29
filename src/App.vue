@@ -6,13 +6,13 @@ import EventLog from '@/components/EventLog.vue'
 import GameOverModal from '@/components/GameOverModal.vue'
 import { useGame } from '@/composables/useGame'
 
-const { state, highScore, lastGameSummary, canPerformAction, gatherWood, gatherStone, hunt, drink, restart } = useGame()
+const { state, highScore, lastGameSummary, lastGameCompareBaseline, canPerformAction, gatherWood, gatherStone, hunt, drink, restart } = useGame()
 
 const isNewRecord = computed(() => state.value.turn >= highScore.value && state.value.turn > 0)
 
 const turnCompare = computed(() => {
-  if (!lastGameSummary.value) return null
-  const diff = state.value.turn - lastGameSummary.value.turn
+  if (!lastGameCompareBaseline.value) return null
+  const diff = state.value.turn - lastGameCompareBaseline.value.turn
   if (diff === 0) return 0
   return diff
 })
@@ -115,7 +115,7 @@ function formatTime(timestamp: number): string {
       :final-turn="state.turn"
       :high-score="highScore"
       :is-new-record="isNewRecord"
-      :last-game="lastGameSummary"
+      :last-game="lastGameCompareBaseline"
       :final-health="state.health"
       :final-hunger="state.hunger"
       :final-thirst="state.thirst"

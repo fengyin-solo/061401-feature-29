@@ -38,6 +38,7 @@ export function useGame() {
 
   const highScore = ref<number>(0)
   const lastGameSummary = ref<GameSummary | null>(null)
+  const lastGameCompareBaseline = ref<GameSummary | null>(null)
   let logIdCounter = 0
 
   const canAct = computed(() => !state.value.isGameOver)
@@ -144,6 +145,7 @@ export function useGame() {
   function checkGameOver() {
     if (state.value.health <= 0 || state.value.hunger >= MAX_STAT || state.value.thirst >= MAX_STAT) {
       state.value.isGameOver = true
+      lastGameCompareBaseline.value = lastGameSummary.value
       saveHighScore()
       saveGameSummary()
       addLog('你没能在荒野中生存下来...', 'system')
@@ -197,6 +199,7 @@ export function useGame() {
   }
 
   function restart() {
+    lastGameCompareBaseline.value = lastGameSummary.value
     saveGameSummary()
     state.value = {
       health: 80,
@@ -214,12 +217,14 @@ export function useGame() {
 
   loadHighScore()
   loadLastGameSummary()
+  lastGameCompareBaseline.value = lastGameSummary.value
   addLog('你醒来发现自己身处荒野中，需要想办法生存下去...', 'system')
 
   return {
     state,
     highScore,
     lastGameSummary,
+    lastGameCompareBaseline,
     canAct,
     canPerformAction,
     gatherWood,
