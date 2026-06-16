@@ -6,9 +6,26 @@ import EventLog from '@/components/EventLog.vue'
 import GameOverModal from '@/components/GameOverModal.vue'
 import { useGame } from '@/composables/useGame'
 
-const { state, highScore, canPerformAction, gatherWood, gatherStone, hunt, drink, restart } = useGame()
+const { state, highScore, lastGameSummary, canPerformAction, gatherWood, gatherStone, hunt, drink, restart } = useGame()
 
 const isNewRecord = computed(() => state.value.turn >= highScore.value && state.value.turn > 0)
+
+const turnCompare = computed(() => {
+  if (!lastGameSummary.value) return null
+  const diff = state.value.turn - lastGameSummary.value.turn
+  if (diff === 0) return 0
+  return diff
+})
+
+function formatTime(timestamp: number): string {
+  const date = new Date(timestamp)
+  return date.toLocaleString('zh-CN', {
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+}
 </script>
 
 <template>
@@ -26,14 +43,35 @@ const isNewRecord = computed(() => state.value.turn >= highScore.value && state.
         <p class="text-gray-400">在恶劣的荒野中尽可能生存更久</p>
       </header>
 
-      <div class="flex justify-center gap-8 mb-8">
+      <div class="flex justify-center gap-4 mb-8 flex-wrap">
         <div class="bg-game-card/80 backdrop-blur px-6 py-3 rounded-xl border border-game-border">
           <span class="text-gray-400 text-sm">当前回合</span>
-          <p class="text-2xl font-bold text-white tabular-nums">{{ state.turn }}</p>
+          <p class="text-2xl font-bold text-white tabular-nums flex items-center gap-2">
+            {{ state.turn }}
+            <span
+              v-if="turnCompare !== null && turnCompare !== 0"
+              :class="turnCompare > 0 ? 'text-green-400' : 'text-red-400'"
+              class="text-sm font-normal"
+            >
+              {{ turnCompare > 0 ? '↑' : '↓' }} {{ Math.abs(turnCompare) }}
+            </span>
+          </p>
         </div>
         <div class="bg-game-card/80 backdrop-blur px-6 py-3 rounded-xl border border-game-border">
           <span class="text-gray-400 text-sm">最高纪录</span>
           <p class="text-2xl font-bold text-yellow-400 tabular-nums">🏆 {{ highScore }}</p>
+        </div>
+        <div
+          v-if="lastGameSummary"
+          class="bg-game-card/80 backdrop-blur px-6 py-3 rounded-xl border border-game-border"
+        >
+          <span class="text-gray-400 text-sm">最近一局</span>
+          <p class="text-2xl font-bold text-purple-400 tabular-nums">
+            🕐 {{ lastGameSummary.turn }}
+          </p>
+          <p class="text-xs text-gray-500 mt-0.5">
+            {{ lastGameSummary.deathReason }} · {{ formatTime(lastGameSummary.endTime) }}
+          </p>
         </div>
       </div>
 
@@ -77,6 +115,12 @@ const isNewRecord = computed(() => state.value.turn >= highScore.value && state.
       :final-turn="state.turn"
       :high-score="highScore"
       :is-new-record="isNewRecord"
+      :last-game="lastGameSummary"
+      :final-health="state.health"
+      :final-hunger="state.hunger"
+      :final-thirst="state.thirst"
+      :final-wood="state.wood"
+      :final-stone="state.stone"
       @restart="restart"
     />
   </div>

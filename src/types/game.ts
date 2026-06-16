@@ -38,3 +38,14 @@ export interface ActionEffect {
   wood?: number
   stone?: number
 }
+
+export interface GameSummary {
+  turn: number
+  finalHealth: number
+  finalHunger: number
+  finalThirst: number
+  finalWood: number
+  finalStone: number
+  endTime: number
+  deathReason: string
+}

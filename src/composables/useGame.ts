@@ -1,8 +1,9 @@
 import { ref, computed, watch } from 'vue'
-import type { GameState, LogEntry, RandomEvent, ActionType, ActionEffect } from '@/types/game'
+import type { GameState, LogEntry, RandomEvent, ActionType, ActionEffect, GameSummary } from '@/types/game'
 import { randomEvents } from '@/data/events'
 
 const STORAGE_KEY_HIGH_SCORE = 'survival_game_high_score'
+const STORAGE_KEY_LAST_GAME = 'survival_game_last_game'
 const MAX_STAT = 100
 
 const actionEffects: Record<ActionType, ActionEffect> = {
@@ -36,6 +37,7 @@ export function useGame() {
   })
 
   const highScore = ref<number>(0)
+  const lastGameSummary = ref<GameSummary | null>(null)
   let logIdCounter = 0
 
   const canAct = computed(() => !state.value.isGameOver)
@@ -59,6 +61,44 @@ export function useGame() {
       } catch (e) {
         // ignore
       }
+    }
+  }
+
+  function getDeathReason(): string {
+    if (state.value.health <= 0) return '生命值耗尽'
+    if (state.value.hunger >= MAX_STAT) return '饥饿值满格（饿死）'
+    if (state.value.thirst >= MAX_STAT) return '口渴值满格（渴死）'
+    return '未知原因'
+  }
+
+  function saveGameSummary() {
+    if (state.value.turn <= 0) return
+    const summary: GameSummary = {
+      turn: state.value.turn,
+      finalHealth: state.value.health,
+      finalHunger: state.value.hunger,
+      finalThirst: state.value.thirst,
+      finalWood: state.value.wood,
+      finalStone: state.value.stone,
+      endTime: Date.now(),
+      deathReason: state.value.isGameOver ? getDeathReason() : '主动结束',
+    }
+    lastGameSummary.value = summary
+    try {
+      localStorage.setItem(STORAGE_KEY_LAST_GAME, JSON.stringify(summary))
+    } catch (e) {
+      // ignore
+    }
+  }
+
+  function loadLastGameSummary() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY_LAST_GAME)
+      if (saved) {
+        lastGameSummary.value = JSON.parse(saved) as GameSummary
+      }
+    } catch (e) {
+      lastGameSummary.value = null
     }
   }
 
@@ -105,6 +145,7 @@ export function useGame() {
     if (state.value.health <= 0 || state.value.hunger >= MAX_STAT || state.value.thirst >= MAX_STAT) {
       state.value.isGameOver = true
       saveHighScore()
+      saveGameSummary()
       addLog('你没能在荒野中生存下来...', 'system')
     }
   }
@@ -156,6 +197,7 @@ export function useGame() {
   }
 
   function restart() {
+    saveGameSummary()
     state.value = {
       health: 80,
       hunger: 30,
@@ -171,11 +213,13 @@ export function useGame() {
   }
 
   loadHighScore()
+  loadLastGameSummary()
   addLog('你醒来发现自己身处荒野中，需要想办法生存下去...', 'system')
 
   return {
     state,
     highScore,
+    lastGameSummary,
     canAct,
     canPerformAction,
     gatherWood,
